@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="order-status-section">
+    <h1 class="section-title">Order #{{ order.id }}</h1>
+
+    <div class="status-tracker">
+        {% set stages = ['قيد التحضير', 'في الطريق', 'تم التوصيل'] %}
+        {% set current_index = stages.index(order.status) if order.status in stages else 0 %}
+
+        {% for stage in stages %}
+            {% set loop_index = loop.index0 %}
+            <div class="stage {% if loop_index == current_index %}active{% elif loop_index < current_index %}done{% endif %}">
+                <div class="stage-icon">
+                    {% if stage == 'قيد التحضير' %}🍕
+                    {% elif stage == 'في الطريق' %}🛵
+                    {% else %}✅{% endif %}
+                </div>
+                <p>{{ stage }}</p>
+            </div>
+            {% if not loop.last %}<div class="stage-line"></div>{% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="order-details">
+        <div class="detail-card">
+            <h3>📦 Items</h3>
+            <p>{{ order.items }}</p>
+        </div>
+        <div class="detail-card">
+            <h3>📍 Delivery Address</h3>
+            <p>{{ order.address }}</p>
+        </div>
+        <div class="detail-card">
+            <h3>💰 Total</h3>
+            <p>{{ order.total }} EGP
+            {% if order.discount and order.discount > 0 %}
+                <span class="saved">(Saved {{ order.discount | round(2) }} EGP)</span>
+            {% endif %}
+            </p>
+        </div>
+        <div class="detail-card">
+            <h3>📅 Placed At</h3>
+            <p>{{ order.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+        </div>
+    </div>
+
+    <div class="order-actions">
+        <a href="/profile" class="btn">My Orders</a>
+        <a href="/menu" class="btn btn-outline">Order More</a>
+    </div>
+</section>
+
+{% endblock %}
