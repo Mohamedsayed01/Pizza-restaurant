@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="admin-section">
+    <div class="admin-header">
+        <h1>⚙️ Admin Dashboard</h1>
+        <p class="admin-date">{{ now }}</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+        <div class="kpi-card kpi-orders">
+            <div class="kpi-icon">📦</div>
+            <div class="kpi-info">
+                <h3>{{ orders | length }}</h3>
+                <p>Total Orders</p>
+            </div>
+        </div>
+        <div class="kpi-card kpi-revenue">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-info">
+                <h3>{{ "%.0f"|format(total_revenue) }} EGP</h3>
+                <p>Total Revenue</p>
+            </div>
+        </div>
+        <div class="kpi-card kpi-users">
+            <div class="kpi-icon">👥</div>
+            <div class="kpi-info">
+                <h3>{{ users_count }}</h3>
+                <p>Registered Users</p>
+            </div>
+        </div>
+        <div class="kpi-card kpi-avg">
+            <div class="kpi-icon">📊</div>
+            <div class="kpi-info">
+                <h3>{{ "%.0f"|format(avg_order) }} EGP</h3>
+                <p>Avg Order Value</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <!-- Orders by Status Donut -->
+        <div class="chart-card">
+            <h3>Orders by Status</h3>
+            <canvas id="statusChart"></canvas>
+        </div>
+
+        <!-- Revenue by Pizza Bar Chart -->
+        <div class="chart-card chart-wide">
+            <h3>Revenue by Pizza Type</h3>
+            <canvas id="pizzaChart"></canvas>
+        </div>
+
+        <!-- Daily Orders Line -->
+        <div class="chart-card chart-wide">
+            <h3>Orders Over Time</h3>
+            <canvas id="timeChart"></canvas>
+        </div>
+
+        <!-- Status breakdown numbers -->
+        <div class="chart-card">
+            <h3>Status Breakdown</h3>
+            <div class="status-breakdown">
+                {% for s, count in status_counts.items() %}
+                <div class="breakdown-row">
+                    <span class="status-badge status-{{ s | replace(' ', '-') }}">{{ s }}</span>
+                    <div class="breakdown-bar-wrap">
+                        <div class="breakdown-bar" style="width: {{ (count / (orders|length) * 100) if orders else 0 }}%"></div>
+                    </div>
+                    <span class="breakdown-count">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="admin-table-container">
+        <div class="table-header">
+            <h2>All Orders</h2>
+            <div class="table-filters">
+                <select id="statusFilter" onchange="filterTable()">
+                    <option value="">All Statuses</option>
+                    <option>قيد التحضير</option>
+                    <option>في الطريق</option>
+                    <option>تم التوصيل</option>
+                    <option>ملغي</option>
+                </select>
+            </div>
+        </div>
+
+        {% if orders %}
+        <table class="admin-table" id="ordersTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Promo</th>
+                    <th>Address</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr data-status="{{ order.status }}">
+                    <td><strong>#{{ order.id }}</strong></td>
+                    <td>{{ order.user.full_name }}<br><small style="color:var(--muted)">{{ order.user.email }}</small></td>
+                    <td class="items-cell">{{ order.items }}</td>
+                    <td><strong>{{ order.total }} EGP</strong>{% if order.discount > 0 %}<br><small style="color:#6fcf97">-{{ "%.1f"|format(order.discount) }} saved</small>{% endif %}</td>
+                    <td>{{ order.promo_code or '—' }}</td>
+                    <td>{{ order.address }}</td>
+                    <td>{{ order.created_at.strftime('%d %b<br>%H:%M') }}</td>
+                    <td><span class="status-badge status-{{ order.status | replace(' ', '-') }}">{{ order.status }}</span></td>
+                    <td>
+                        <form action="/admin/update_status/{{ order.id }}" method="POST" class="inline-form">
+                            <select name="status" class="status-select">
+                                <option value="قيد التحضير" {% if order.status == 'قيد التحضير' %}selected{% endif %}>🍕 قيد التحضير</option>
+                                <option value="في الطريق" {% if order.status == 'في الطريق' %}selected{% endif %}>🛵 في الطريق</option>
+                                <option value="تم التوصيل" {% if order.status == 'تم التوصيل' %}selected{% endif %}>✅ تم التوصيل</option>
+                                <option value="ملغي" {% if order.status == 'ملغي' %}selected{% endif %}>❌ ملغي</option>
+                            </select>
+                            <button type="submit" class="update-btn">Save</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-orders">No orders yet.</p>
+        {% endif %}
+    </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#aaa';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
+
+// Status Donut
+const statusData = {{ status_counts | tojson }};
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(statusData),
+        datasets: [{
+            data: Object.values(statusData),
+            backgroundColor: ['#ffc107','#2196f3','#28a745','#e63946'],
+            borderWidth: 2,
+            borderColor: '#1a1a2e'
+        }]
+    },
+    options: {
+        plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } } },
+        cutout: '65%'
+    }
+});
+
+// Pizza Revenue Bar
+const pizzaData = {{ pizza_revenue | tojson }};
+new Chart(document.getElementById('pizzaChart'), {
+    type: 'bar',
+    data: {
+        labels: Object.keys(pizzaData),
+        datasets: [{
+            label: 'Revenue (EGP)',
+            data: Object.values(pizzaData),
+            backgroundColor: 'rgba(230,57,70,0.7)',
+            borderColor: '#e63946',
+            borderWidth: 1,
+            borderRadius: 6
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { display: false }, ticks: { maxRotation: 30 } }
+        }
+    }
+});
+
+// Time Line Chart
+const timeData = {{ daily_orders | tojson }};
+new Chart(document.getElementById('timeChart'), {
+    type: 'line',
+    data: {
+        labels: Object.keys(timeData),
+        datasets: [{
+            label: 'Orders',
+            data: Object.values(timeData),
+            borderColor: '#e63946',
+            backgroundColor: 'rgba(230,57,70,0.1)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#e63946',
+            pointRadius: 4
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+// Table Filter
+function filterTable() {
+    const val = document.getElementById('statusFilter').value;
+    document.querySelectorAll('#ordersTable tbody tr').forEach(row => {
+        row.style.display = (!val || row.dataset.status === val) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
