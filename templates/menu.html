@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="menu-section">
+    <h1 class="menu-title">Our Premium Pizza Menu</h1>
+    <p class="menu-subtitle">Freshly baked with high-quality ingredients and authentic flavors.</p>
+
+    <div class="menu-container">
+
+        {% set pizzas = [
+            ('Margherita Pizza', 'margherita.jpg', 'Traditional Italian pizza with rich tomato sauce, fresh mozzarella and basil. A timeless classic.', 105),
+            ('Pepperoni Pizza', 'pepperoni.jpg', 'Topped with premium spicy pepperoni slices and melted mozzarella over our signature tomato sauce.', 115),
+            ('Veggie Supreme', 'veggie.png', 'A healthy blend of mushrooms, olives, onions, bell peppers, and fresh tomatoes with mozzarella.', 100),
+            ('BBQ Chicken Pizza', 'bbq.jpg', 'Grilled chicken with smoky BBQ sauce, red onions, and melted cheese for a bold flavor.', 110),
+            ('Four Cheese Pizza', 'fourcheese.jpg', 'Rich combination of mozzarella, cheddar, parmesan, and blue cheese. The ultimate cheese experience.', 100),
+            ('Seafood Pizza', 'seafood.jpeg', 'Topped with shrimp and calamari blended with garlic sauce and premium mozzarella cheese.', 120)
+        ] %}
+
+        {% for name, img, desc, price in pizzas %}
+        <div class="pizza-card">
+            <img src="{{ url_for('static', filename=img) }}" alt="{{ name }}">
+            <h3>{{ name }}</h3>
+            <p>{{ desc }}</p>
+            <span class="price">{{ price }} EGP</span>
+
+            {% if current_user.is_authenticated %}
+            <form action="/add_to_cart" method="POST">
+                <input type="hidden" name="pizza_name" value="{{ name }}">
+                <input type="hidden" name="price" value="{{ price }}">
+                <button type="submit" class="add-btn">Add to Cart 🛒</button>
+            </form>
+            {% else %}
+            <a href="/login" class="add-btn" style="text-decoration:none; display:inline-block;">Login to Order</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+    </div>
+</section>
+
+{% endblock %}
