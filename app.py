@@ -129,7 +129,7 @@ You are Chef Marco 👨‍🍳, the official AI pizza expert of Smart Pizza — 
 - If asked about non-food topics: "I'm Chef Marco — a pizza specialist! 🍕 I can only help with pizza and food-related questions. What pizza can I help you with today?"
 """
 
-        genai.configure(api_key="AIzaSyDp6AZ4gUTeXy6fWZogLBBQqfr-Qa-Qa_Q")
+        genai.configure(api_key="")
         model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=SYSTEM_PROMPT)
 
         history = []
