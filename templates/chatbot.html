@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="chatbot-section">
+    <div class="chatbot-wrapper">
+        <div class="chatbot-header">
+            <span class="bot-avatar">👨‍🍳</span>
+            <div>
+                <div class="bot-name-row">
+                    <h2>Chef Marco</h2>
+                    <span class="bot-tag">Smart Pizza Expert</span>
+                </div>
+                <p class="bot-status">● Online — Pizza & Food Specialist</p>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <span class="msg-avatar">👨‍🍳</span>
+                <div class="msg-bubble">
+                    Welcome to <strong>Smart Pizza</strong>! 🍕<br><br>
+                    I'm <strong>Chef Marco</strong>, your personal pizza expert trained in Naples, Italy 🇮🇹<br><br>
+                    I can help you with:<br>
+                    🍕 Our menu & prices<br>
+                    👨‍🍳 How to make pizza at home<br>
+                    🧀 Ingredients & flavors<br>
+                    🎟️ Promo codes & discounts<br>
+                    📦 How to place an order<br><br>
+                    What can I get started for you today?
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-questions">
+            <button onclick="sendQuick('What is your most popular pizza?')">⭐ Most Popular</button>
+            <button onclick="sendQuick('What are your prices?')">💰 Prices</button>
+            <button onclick="sendQuick('How do I make pizza dough at home?')">👨‍🍳 Pizza Dough</button>
+            <button onclick="sendQuick('Do you have any promo codes?')">🎟️ Promos</button>
+        </div>
+
+        <div class="chat-input-row">
+            <input type="text" id="userInput" placeholder="Ask me anything about pizza..."
+                   onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()" class="send-btn">Send ➤</button>
+        </div>
+    </div>
+</section>
+
+<script>
+let history = [];
+
+function addMessage(text, isUser) {
+    const c = document.getElementById('chatMessages');
+    const d = document.createElement('div');
+    d.className = isUser ? 'message user-message' : 'message bot-message';
+    d.innerHTML = isUser
+        ? `<div class="msg-bubble">${text}</div><span class="msg-avatar">👤</span>`
+        : `<span class="msg-avatar">👨‍🍳</span><div class="msg-bubble">${text}</div>`;
+    c.appendChild(d);
+    c.scrollTop = c.scrollHeight;
+}
+
+function addTyping() {
+    const c = document.getElementById('chatMessages');
+    const d = document.createElement('div');
+    d.className = 'message bot-message typing-indicator';
+    d.id = 'typing';
+    d.innerHTML = `<span class="msg-avatar">👨‍🍳</span><div class="msg-bubble"><span></span><span></span><span></span></div>`;
+    c.appendChild(d);
+    c.scrollTop = c.scrollHeight;
+}
+
+function removeTyping() {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+}
+
+async function sendMessage() {
+    const input = document.getElementById('userInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addMessage(text, true);
+    history.push({ role: 'user', content: text });
+    addTyping();
+
+    try {
+        const res = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: history })
+        });
+        const data = await res.json();
+        removeTyping();
+        if (data.reply) {
+            history.push({ role: 'assistant', content: data.reply });
+            addMessage(data.reply.replace(/\n/g, '<br>'), false);
+        } else {
+            addMessage('❌ ' + (data.error || 'Something went wrong'), false);
+        }
+    } catch (e) {
+        removeTyping();
+        addMessage('❌ Network error: ' + e.message, false);
+    }
+}
+
+function sendQuick(text) {
+    document.getElementById('userInput').value = text;
+    sendMessage();
+}
+</script>
+{% endblock %}
