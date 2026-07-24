@@ -200,8 +200,4 @@ This project is licensed under the **MIT License** — feel free to use and buil
 ## 👤 Author
 
 **Mohamed Sayed**
-🔗 [GitHub](https://github.com/Mohamedsayed01)
-
----
-
-<p align="center">Made with ❤️ and 🍕 in Cairo, Egypt</p>
+🔗 [linkedIn](https://www.linkedin.com/in/m0hamed-sayed)
